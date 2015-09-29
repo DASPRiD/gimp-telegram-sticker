@@ -24,7 +24,7 @@ def python_telegram_sticker(timg, tdrawable):
     timg.active_layer = strokeLayer
 
     pdb.gimp_image_select_item(timg, 0, imageLayer)
-    pdb.gimp_selection_grow(5)
+    pdb.gimp_selection_grow(timg, 5)
     pdb.gimp_edit_fill(strokeLayer, 1)
     pdb.gimp_selection_none(timg)
     
