@@ -45,8 +45,7 @@ def python_telegram_sticker(timg, tdrawable):
     
     # Final resize
     resizeToTargetSize(timg)
-    pdb.gimp_image_resize(timg, 512, 512, int(256 - timg.width / 2), int(256 - timg.height / 2))
-    
+
     # Restore drawing context and end undo group
     pdb.gimp_context_pop()
     timg.undo_group_end()
