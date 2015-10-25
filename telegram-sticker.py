@@ -2,6 +2,8 @@
 
 from __future__ import division
 from gimpfu import *
+import re
+import tempfile
 
 def python_telegram_sticker(timg, tdrawable):
     timg.undo_group_start()
@@ -19,18 +21,11 @@ def python_telegram_sticker(timg, tdrawable):
     
     # Create white outline
     pdb.gimp_image_resize(timg, newWidth + 10, newHeight + 10, 5, 5)
-    
-    strokeLayer = gimp.Layer(timg, 'stroke', newWidth + 10, newHeight + 10, RGBA_IMAGE, 100, NORMAL_MODE)
-    timg.add_layer(strokeLayer, 1)
-    timg.active_layer = strokeLayer
-
     pdb.gimp_image_select_item(timg, 0, imageLayer)
-    pdb.gimp_context_set_foreground((255, 255, 255))
-    pdb.gimp_context_set_paint_method('gimp-paintbrush')
-    pdb.gimp_context_set_brush('2. Hardness 100')
-    pdb.gimp_context_set_brush_size(10)
-    pdb.gimp_edit_stroke(strokeLayer)
+    pdb.plug_in_sel2path(timg, imageLayer)
     pdb.gimp_selection_none(timg)
+    
+    strokeLayer = strokeVector(timg, timg.vectors[0], 10)
     
     # Create drop shadow
     pdb.script_fu_drop_shadow(timg, strokeLayer, 5, 5, 10, (0, 0, 0), 25, 1)
@@ -42,15 +37,43 @@ def python_telegram_sticker(timg, tdrawable):
     pdb.gimp_context_pop()
     timg.undo_group_end()
     
+def strokeVector(timg, vector, width):
+    newAttributes = {
+        'stroke': 'white',
+        'stroke-width': width,
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+        'stroke-miterlimit': 10,
+    }
+
+    svg = pdb.gimp_vectors_export_to_string(timg, vector)
+    svg = re.sub(r'(<svg\s[^>]*\swidth\s*=\s*)\S*"', r'\1"%dpx"' % timg.width, svg, flags=re.DOTALL)
+    svg = re.sub(r'(<svg\s[^>]*\sheight\s*=\s*)\S*"', r'\1"%dpx"' % timg.height, svg, flags=re.DOTALL)
+    svg = re.sub(r'(<path\s[^>]*)\sstroke\s*=\s*"black"', r'\1', svg, flags=re.DOTALL)
+    svg = re.sub(r'(<path\s[^>]*)\sstroke-width\s*=\s*"1"', r'\1', svg, flags=re.DOTALL)
+    svg = re.sub(r'(<path\s)', r'\1' + ''.join([r'%s="%s" ' % i for i in newAttributes.items()]), svg, flags=re.DOTALL)
+    
+    tmpfile = tempfile.NamedTemporaryFile(suffix='.svg')
+    tmpfile.write(svg)
+    tmpfile.flush();
+
+    strokeLayer = pdb.gimp_file_load_layer(timg, tmpfile.name)
+    strokeLayer.name = 'stroke'
+    tmpfile.close()
+    timg.add_layer(strokeLayer, 1)
+    
+    return strokeLayer
+    
 def resizeToTargetSize(timg):
-    width  = timg.width
-    height = timg.height
+    targetSize = 512
+    width      = timg.width
+    height     = timg.height
     
     if (width > height):
-        newWidth = 512
+        newWidth = targetSize
         newHeight = int(height / (width / newWidth))
     else:
-        newHeight = 512
+        newHeight = targetSize
         newWidth = int(width / (height / newHeight))
     
     pdb.gimp_image_scale(timg, newWidth, newHeight)
