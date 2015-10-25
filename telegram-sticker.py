@@ -20,7 +20,7 @@ def python_telegram_sticker(timg, tdrawable):
     pdb.gimp_layer_resize_to_image_size(imageLayer)
     
     # Create white outline
-    pdb.gimp_image_resize(timg, newWidth + 10, newHeight + 10, 5, 5)
+    pdb.gimp_image_resize(timg, newWidth + 12, newHeight + 12, 6, 6)
     pdb.gimp_image_select_item(timg, 0, imageLayer)
     pdb.plug_in_sel2path(timg, imageLayer)
     pdb.gimp_selection_none(timg)
