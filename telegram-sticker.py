@@ -2,8 +2,6 @@
 
 from __future__ import division
 from gimpfu import *
-import re
-import tempfile
 import math
 from array import array
 
