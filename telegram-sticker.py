@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""Telegram Sticker
+
+@link      http://github.com/DASPRiD/gimp-telegram-sticker For the canonical source repository
+@copyright 2015 Ben Scholzen 'DASPRiD'
+@license   http://opensource.org/licenses/BSD-2-Clause Simplified BSD License
+"""
 
 from __future__ import division
 from gimpfu import *
