@@ -11,14 +11,17 @@ from gimpfu import *
 import math
 from array import array
 
-def python_telegram_sticker(timg, tdrawable):
+def python_telegram_sticker(timg, tdrawable, alphaThreshold):
     timg.undo_group_start()
     
     # Merge all layers
     pdb.gimp_image_merge_visible_layers(timg, 0)
+    imageLayer = timg.layers[0]
+
+    # Apple alpha threshhold
+    pdb.gimp_levels(imageLayer, 4, alphaThreshold, 255, 1, 0, 255);
 
     # Crop and resize image
-    imageLayer = timg.layers[0]
     pdb.plug_in_autocrop(timg, imageLayer)
 
     newWidth, newHeight = resizeToTargetSize(timg)
@@ -176,10 +179,13 @@ register(
         "Ben Scholzen 'DASPRiD'",
         "Ben Scholzen 'DASPRiD'",
         "2015",
-        "<Image>/Filters/Generic/Telegram Sticker",
-        "RGB*, GRAY*",
-        [],
+        "<Image>/Filters/Generic/Telegram Sticker...",
+        "RGB*",
+        [
+            (PF_SLIDER, "alphaThreshold",  "_Alpha threshold", 30, (0, 255, 1)),
+        ],
         [],
         python_telegram_sticker)
 
 main()
+
