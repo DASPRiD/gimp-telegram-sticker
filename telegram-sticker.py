@@ -15,22 +15,28 @@ def python_telegram_sticker(timg, tdrawable, alphaThreshold):
     timg.undo_group_start()
     
     # Merge all layers
-    pdb.gimp_image_merge_visible_layers(timg, 0)
-    imageLayer = timg.layers[0]
+    imageLayer = pdb.gimp_image_merge_visible_layers(timg, 0)
 
-    # Apple alpha threshhold
-    pdb.gimp_levels(imageLayer, 4, alphaThreshold, 255, 1, 0, 255);
+    # Apply alpha threshhold
+    thresholdLayer = pdb.gimp_layer_copy(imageLayer, True)
+    timg.add_layer(thresholdLayer, 1)
+    pdb.gimp_layer_set_visible(imageLayer, False)
+    pdb.gimp_levels(thresholdLayer, 4, alphaThreshold, 255, 1, 0, 255);
 
     # Crop and resize image
-    pdb.plug_in_autocrop(timg, imageLayer)
+    pdb.plug_in_autocrop(timg, thresholdLayer)
 
     newWidth, newHeight = resizeToTargetSize(timg)
     pdb.gimp_image_resize(timg, newWidth + 30, newHeight + 30, 10, 10)
     pdb.gimp_layer_resize_to_image_size(imageLayer)
     
+    # Remove threshold layer
+    timg.remove_layer(thresholdLayer)
+    pdb.gimp_layer_set_visible(imageLayer, True)
+
     # Create white outline
     renderer = strokeRenderer()
-    strokeLayer = renderer.renderStroke(timg, imageLayer, (255, 255, 255), 5)
+    strokeLayer = renderer.renderStroke(timg, imageLayer, (255, 255, 255), 5, alphaThreshold)
     
     # Create drop shadow
     pdb.script_fu_drop_shadow(timg, strokeLayer, 5, 5, 10, (0, 0, 0), 25, 0)
@@ -39,7 +45,7 @@ def python_telegram_sticker(timg, tdrawable, alphaThreshold):
     timg.undo_group_end()
     
 class strokeRenderer:
-    def renderStroke(self, timg, tdrawable, color, size):
+    def renderStroke(self, timg, tdrawable, color, size, alphaThreshold):
         strokeLayer = gimp.Layer(timg, 'stroke', tdrawable.width, tdrawable.height, RGBA_IMAGE, 100, NORMAL_MODE)
         timg.add_layer(strokeLayer, 1)
     
@@ -48,6 +54,7 @@ class strokeRenderer:
         self.radiusPlusOneSquared = ((self.radius + 1) * (self.radius + 1) * 65536)
         self.width = strokeLayer.width
         self.height = strokeLayer.height
+        self.alphaThreshold = 255 - alphaThreshold;
         
         region = strokeLayer.get_pixel_rgn(0, 0, self.width, self.height, True, True)
         self.pixels = array('B', [color[0], color[1], color[2], 0] * (self.width * self.height))
@@ -87,7 +94,7 @@ class strokeRenderer:
 
             if a == 0:
                 g[x] = 0
-            elif a == 255:
+            elif a >= self.alphaThreshold:
                 g[x] = inf
             else:
                 g[x] = a
@@ -99,7 +106,7 @@ class strokeRenderer:
 
                 if a == 0:
                     g[idx] = 0
-                elif a == 255:
+                elif a >= self.alphaThreshold:
                     g[idx] = scale + g[idx - m]
                 else:
                     g[idx] = a
